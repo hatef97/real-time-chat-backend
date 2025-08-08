@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'djoser',
     'channels',
     # My apps
-
+    'core',
 ]
 
 MIDDLEWARE = [
