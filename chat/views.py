@@ -129,3 +129,4 @@ class ChatParticipantViewSet(viewsets.ModelViewSet):
         chat_participant.is_active = False
         chat_participant.save()
         return Response({"detail": "Participant deactivated."}, status=status.HTTP_200_OK)
+        
