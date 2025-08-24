@@ -15,4 +15,6 @@ urlpatterns = [
     
     # Core app
     path('api/core/', include('core.urls')),
+    # chat app
+    path('api/chat/', include('chat.urls')),
 ]
