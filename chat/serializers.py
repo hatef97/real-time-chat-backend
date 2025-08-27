@@ -21,7 +21,7 @@ class ChatRoomSerializer(serializers.ModelSerializer):
 
 # Serializer for Message model
 class MessageSerializer(serializers.ModelSerializer):
-    sender = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all())
+    sender = serializers.SlugRelatedField(slug_field='username', read_only=True)
     chat_room = serializers.PrimaryKeyRelatedField(queryset=ChatRoom.objects.all())
 
     class Meta:
