@@ -1,26 +1,36 @@
-# Ignore Python compiled files
+# Python bytecode
 __pycache__/
 *.pyc
 *.pyo
 
-# Ignore environment files
+# Environments & local config
 .env
-venv/
 .env.local
+.venv/
+venv/
 
-# Ignore database and migrations
+# Databases
 *.sqlite3
 db.sqlite3
-migrations/
 
-# Ignore Django static and media files
+# Django static and media (generated)
 staticfiles/
 media/
 
-# Ignore VSCode and JetBrains IDE settings
+# IDEs
 .vscode/
 .idea/
 
-# Ignore Django secret key and config files
+# Django secret key and local settings
 config/settings/local.py
-.env
+
+# Build/dist artifacts
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# Logs & OS noise
+*.log
+.DS_Store
+Thumbs.db
