@@ -136,5 +136,6 @@ CHANNEL_LAYERS = {
     }
 }
 
+
 # CORS for frontend later
 # CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
