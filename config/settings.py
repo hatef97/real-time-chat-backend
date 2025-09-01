@@ -1,5 +1,7 @@
 from pathlib import Path
 import environ
+import os
+import dj_database_url
 
 
 
@@ -16,7 +18,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
-ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -71,10 +73,10 @@ ASGI_APPLICATION = 'config.asgi.application'  # Channels/ASGI
 
 # Database (dev)
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL", "postgres:///chatdb"),
+        conn_max_age=600,
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -128,12 +130,16 @@ DJOSER = {
     "TOKEN_MODEL": None,  # using JWT, not Token model
 }
 
-# Channels (Redis) — update REDIS_URL in .env for Docker later
+# channels
+ASGI_APPLICATION = "config.asgi.application"
+
+# redis channel layer using REDIS_URL
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [env("REDIS_URL")]},
-    }
+        "CONFIG": {"hosts": [REDIS_URL]},
+    },
 }
 
 

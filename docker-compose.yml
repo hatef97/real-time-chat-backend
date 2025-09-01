@@ -1,30 +1,43 @@
 version: "3.9"
-services:
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
 
-  web:
+services:
+  api:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
+    container_name: chat_api
     env_file:
       - .env
     ports:
       - "8000:8000"
     depends_on:
+      - db
       - redis
-
-  daphne:
-    build: .
-    command: daphne -b 0.0.0.0 -p 8001 config.asgi:application
     volumes:
       - .:/app
-    env_file:
-      - .env
+    # Healthcheck is optional but helpful
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgres:16-alpine
+    container_name: chat_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-chatdb}
+      POSTGRES_USER: ${POSTGRES_USER:-chatuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chatpass}
     ports:
-      - "8001:8001"
-    depends_on:
-      - redis
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: chat_redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+volumes:
+  pgdata:
