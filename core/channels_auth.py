@@ -68,4 +68,3 @@ class JwtAuthMiddleware:
 def JwtAuthMiddlewareStack(inner):
     # Compose with default AuthMiddlewareStack so session/cookie auth still works
     return JwtAuthMiddleware(AuthMiddlewareStack(inner))
-    
