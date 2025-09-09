@@ -35,11 +35,14 @@ def create_message(room_id: int, user_id: int, content: str) -> dict:
 
 class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
+        self.rooms = set()
+        self.room_group_name = None
+
         user = self.scope.get("user")
         if not user or isinstance(user, AnonymousUser) or not user.is_authenticated:
             await self.close(code=4401)  # Unauthorized
             return
-        self.rooms = set()
+
         await self.accept()
 
     async def receive_json(self, content, **kwargs):
@@ -56,9 +59,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.send_json({"type": "error", "detail": "unknown_action"})
 
     async def disconnect(self, code):
-        for gid in list(self.rooms):
-            await self.channel_layer.group_discard(gid, self.channel_name)
-            self.rooms.discard(gid)
+        if getattr(self, "rooms", None):
+            for gid in list(self.rooms):
+                await self.channel_layer.group_discard(gid, self.channel_name)
+                self.rooms.discard(gid)
 
     async def _join(self, payload):
         room_id = payload.get("room_id")
