@@ -142,6 +142,17 @@ CHANNEL_LAYERS = {
     }
 }
 
+# Redis-backed cache (used by JwtAuthMiddleware for user caching, and elsewhere)
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/1",  # host:port/dbindex — adjust if needed
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+        "TIMEOUT": 60,  # default TTL (seconds) if not overridden per-set
+    }
+}
 
 # CORS for frontend later
 # CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
