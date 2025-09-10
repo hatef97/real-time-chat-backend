@@ -40,3 +40,4 @@ async def test_ws_accept_with_token():
     connected, _ = await comm.connect()
     assert connected is True
     await comm.disconnect()
+    
