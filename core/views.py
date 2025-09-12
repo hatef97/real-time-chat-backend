@@ -44,3 +44,4 @@ class UserMeViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         serializer.save(user=user)
         super().perform_update(serializer)
+
