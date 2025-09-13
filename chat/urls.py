@@ -5,6 +5,10 @@ from .views import ChatRoomViewSet, MessageViewSet, ChatParticipantViewSet
 
 
 
+app_name = "chat"
+
+
+
 router = DefaultRouter()
 router.register(r'chat-rooms', ChatRoomViewSet, basename='chat-room')
 router.register(r'messages', MessageViewSet, basename='message')
@@ -12,4 +16,14 @@ router.register(r'participants', ChatParticipantViewSet, basename='chat-particip
 
 
 
-urlpatterns = router.urls
+urlpatterns = [
+    # existing router endpoints
+    path("", include(router.urls)),
+
+    # reverse("chat:message-list", kwargs={"room_id": <id>})
+    path(
+        "api/rooms/<int:room_id>/messages/",
+        MessageViewSet.as_view({"get": "list", "post": "create"}),
+        name="message-list",
+    ),
+]

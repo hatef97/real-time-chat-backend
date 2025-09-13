@@ -77,25 +77,17 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    """
-    Requires ?room=<room_id> for list; creates message in a room the user belongs to.
-    Sender is always the authenticated user (ignores provided 'sender').
-    """
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsRoomParticipant]
 
     def get_queryset(self):
-        room_id = self.request.query_params.get("room")
+        # accept either /api/rooms/<room_id>/messages/ OR /messages/?room=<id>
+        room_id = self.kwargs.get("room_id") or self.request.query_params.get("room")
         if not room_id:
-            # No room specified -> show nothing (avoid leaking messages)
             return Message.objects.none()
 
-        room = get_object_or_404(
-            ChatRoom.objects.prefetch_related("participants"),
-            pk=room_id
-        )
+        room = get_object_or_404(ChatRoom.objects.prefetch_related("participants"), pk=room_id)
         if not room.participants.filter(id=self.request.user.id).exists():
-            # Not a participant -> no access
             return Message.objects.none()
 
         return (
@@ -106,15 +98,18 @@ class MessageViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
+        # allow room from body OR from nested URL
         room = serializer.validated_data.get("chat_room")
         if room is None:
-            raise ValidationError({"chat_room": "This field is required."})
+            room_id = self.kwargs.get("room_id")
+            if not room_id:
+                raise ValidationError({"chat_room": "This field is required."})
+            room = get_object_or_404(ChatRoom, pk=room_id)
 
         if not room.participants.filter(id=self.request.user.id).exists():
             raise PermissionDenied("You are not a participant of this room.")
 
-        # Force sender to be the requester regardless of payload
-        serializer.save(sender=self.request.user)
+        serializer.save(chat_room=room, sender=self.request.user)
 
 
 

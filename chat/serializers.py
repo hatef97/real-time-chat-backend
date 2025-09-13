@@ -22,12 +22,12 @@ class ChatRoomSerializer(serializers.ModelSerializer):
 # Serializer for Message model
 class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.SlugRelatedField(slug_field='username', read_only=True)
-    chat_room = serializers.PrimaryKeyRelatedField(queryset=ChatRoom.objects.all())
+    chat_room = serializers.PrimaryKeyRelatedField(queryset=ChatRoom.objects.all(), required=False)
 
     class Meta:
         model = Message
         fields = ['id', 'chat_room', 'sender', 'content', 'timestamp']
-        read_only_fields = ['timestamp']
+        read_only_fields = ['id', 'sender', 'timestamp']
 
 
 
