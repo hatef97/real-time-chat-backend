@@ -10,6 +10,11 @@ from core.models import User
 from .models import ChatRoom, Message, ChatParticipant
 from .serializers import ChatRoomSerializer, MessageSerializer, ChatParticipantSerializer
 from .permissions import IsRoomParticipant
+from .cache import (
+    get_room_messages_cached,
+    set_room_messages_cache,
+    bump_room_version,
+)
 
 
 
@@ -80,13 +85,23 @@ class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsRoomParticipant]
 
-    def get_queryset(self):
-        # accept either /api/rooms/<room_id>/messages/ OR /messages/?room=<id>
+    # ---- helpers ----
+    def _room_from_request(self):
+        """
+        Accept either nested /api/rooms/<room_id>/messages/ or /messages/?room=<id>
+        """
         room_id = self.kwargs.get("room_id") or self.request.query_params.get("room")
         if not room_id:
+            return None
+        return get_object_or_404(ChatRoom.objects.prefetch_related("participants"), pk=room_id)
+
+    def get_queryset(self):
+        room = self._room_from_request()
+        if not room:
+            # No room context -> empty set (keeps /messages/ without room silent)
             return Message.objects.none()
 
-        room = get_object_or_404(ChatRoom.objects.prefetch_related("participants"), pk=room_id)
+        # Ensure requester is a participant (defense-in-depth; your permission also enforces)
         if not room.participants.filter(id=self.request.user.id).exists():
             return Message.objects.none()
 
@@ -94,24 +109,52 @@ class MessageViewSet(viewsets.ModelViewSet):
             Message.objects
             .filter(chat_room=room)
             .select_related("chat_room", "sender")
-            .order_by("timestamp")
+            .order_by("timestamp")  # change to "created_at" if that's your field
         )
 
+    # ---- cached list ----
+    def list(self, request, *args, **kwargs):
+        room = self._room_from_request()
+        if not room:
+            return Response([], status=200)
+
+        # deny if not participant
+        if not room.participants.filter(id=request.user.id).exists():
+            raise PermissionDenied("You are not a participant of this room.")
+
+        cached, key, _v = get_room_messages_cached(room.id)
+        if cached is not None:
+            return Response(cached, status=200)
+
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        set_room_messages_cache(key, data)
+        return Response(data, status=200)
+
+    # ---- mutations (bump cache version) ----
     def perform_create(self, serializer):
         # allow room from body OR from nested URL
-        room = serializer.validated_data.get("chat_room")
+        room = serializer.validated_data.get("chat_room") or self._room_from_request()
         if room is None:
-            room_id = self.kwargs.get("room_id")
-            if not room_id:
-                raise ValidationError({"chat_room": "This field is required."})
-            room = get_object_or_404(ChatRoom, pk=room_id)
+            raise ValidationError({"chat_room": "This field is required."})
 
         if not room.participants.filter(id=self.request.user.id).exists():
             raise PermissionDenied("You are not a participant of this room.")
 
         serializer.save(chat_room=room, sender=self.request.user)
+        bump_room_version(room.id)
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        bump_room_version(instance.chat_room_id)
 
+    def perform_destroy(self, instance):
+        room_id = instance.chat_room_id
+        super().perform_destroy(instance)
+        bump_room_version(room_id)
+
+        
 
 class ChatParticipantViewSet(viewsets.ModelViewSet):
     """
