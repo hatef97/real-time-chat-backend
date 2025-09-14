@@ -146,11 +146,12 @@ CHANNEL_LAYERS = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis:6379/1",  # host:port/dbindex — adjust if needed
+        "LOCATION": os.environ.get("REDIS_URL", "redis://redis:6379/1"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "IGNORE_EXCEPTIONS": True,  # fail-open in dev
         },
-        "TIMEOUT": 60,  # default TTL (seconds) if not overridden per-set
+        "TIMEOUT": 300,  # 5 min default; list cache also sets its own TTL
     }
 }
 
