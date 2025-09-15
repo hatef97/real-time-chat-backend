@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # env
 env = environ.Env(
     DEBUG=(bool, True),
-    SECRET_KEY=(str, 'CHANGE-ME'),
+    SECRET_KEY=(str, 'SECRET_KEY'),
     ALLOWED_HOSTS=(list, []),
     REDIS_URL=(str, 'redis://127.0.0.1:6379/1'),
 )
