@@ -146,12 +146,31 @@ CHANNEL_LAYERS = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.environ.get("REDIS_URL", "redis://redis:6379/1"),
+        "LOCATION": env("REDIS_URL", default="redis://redis:6379/1"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "IGNORE_EXCEPTIONS": True,  # fail-open in dev
+            # Make failures visible outside dev; override via env in local dev
+            "IGNORE_EXCEPTIONS": env.bool("REDIS_IGNORE_EXCEPTIONS", default=False),
+
+            # Timeouts & retries
+            "SOCKET_CONNECT_TIMEOUT": env.float("REDIS_SOCKET_CONNECT_TIMEOUT", default=2.0),
+            "SOCKET_TIMEOUT": env.float("REDIS_SOCKET_TIMEOUT", default=2.5),
+            "RETRY_ON_TIMEOUT": env.bool("REDIS_RETRY_ON_TIMEOUT", default=True),
+
+            # Pooling
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": env.int("REDIS_MAX_CONNECTIONS", default=100),
+            },
+
+            # Compression (optional but useful for message lists)
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+
+            # Serializer:
+            # Default pickle is fine; switch to JSON only if you know all values are JSON-serializable.
+            # "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
         },
-        "TIMEOUT": 300,  # 5 min default; list cache also sets its own TTL
+        "KEY_PREFIX": env("REDIS_KEY_PREFIX", default="chatapp"),
+        "TIMEOUT": env.int("DJANGO_CACHE_TIMEOUT", default=300),
     }
 }
 
