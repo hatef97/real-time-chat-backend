@@ -81,6 +81,11 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
 
 
+def _qp(request, name, default=""):
+    return request.query_params.get(name, default)
+
+
+
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsRoomParticipant]
@@ -122,15 +127,38 @@ class MessageViewSet(viewsets.ModelViewSet):
         if not room.participants.filter(id=request.user.id).exists():
             raise PermissionDenied("You are not a participant of this room.")
 
-        cached, key, _v = get_room_messages_cached(room.id)
-        if cached is not None:
-            return Response(cached, status=200)
+        # Build a cache key that is stable per room-version AND list params
+        cached_base, base_key, _v = get_room_messages_cached(room.id)
+        # include common query params to avoid collisions across pages/sizes
+        page = _qp(request, "page")
+        page_size = _qp(request, "page_size")
+        ordering = _qp(request, "ordering")  # if you expose it; else stays ''
+        key = f"{base_key}:p={page}:ps={page_size}:o={ordering}"
 
+        # Try the param-specific key first
+        from django.core.cache import cache  # use same backend as your helpers
+        data = cache.get(key)
+        if data is not None:
+            return Response(data, status=200)
+
+        # If nothing at param key but the base key holds the *full* list you previously cached,
+        # you could paginate/slice from it here. Simpler: regenerate fresh data now:
         queryset = self.filter_queryset(self.get_queryset())
+
+        # Respect DRF pagination if configured
+        page_obj = self.paginate_queryset(queryset)
+        if page_obj is not None:
+            serializer = self.get_serializer(page_obj, many=True)
+            payload = serializer.data
+            # Cache the *paginated page* under the param key
+            set_room_messages_cache(key, payload)
+            return self.get_paginated_response(payload)
+
+        # No pagination -> cache whole list
         serializer = self.get_serializer(queryset, many=True)
-        data = serializer.data
-        set_room_messages_cache(key, data)
-        return Response(data, status=200)
+        payload = serializer.data
+        set_room_messages_cache(key, payload)
+        return Response(payload, status=200)
 
     # ---- mutations (bump cache version) ----
     def perform_create(self, serializer):
@@ -154,7 +182,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         super().perform_destroy(instance)
         bump_room_version(room_id)
 
-        
+
 
 class ChatParticipantViewSet(viewsets.ModelViewSet):
     """

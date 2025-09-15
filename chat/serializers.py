@@ -29,6 +29,14 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ['id', 'chat_room', 'sender', 'content', 'timestamp']
         read_only_fields = ['id', 'sender', 'timestamp']
 
+    def create(self, validated_data):
+        request = self.context.get("request")
+        if "chat_room" not in validated_data and request is not None:
+            room_id = self.context["view"].kwargs.get("room_id") or request.query_params.get("room")
+            if room_id:
+                validated_data["chat_room"] = ChatRoom.objects.get(pk=room_id)
+        return super().create(validated_data)    
+
 
 
 # Serializer for ChatParticipant model
