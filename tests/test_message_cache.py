@@ -1,10 +1,11 @@
 import pytest
 
-from rest_framework.test import APIClient
-from rest_framework.reverse import reverse
+from django.urls import reverse
 
-from core.models import User
+from rest_framework.test import APIClient
+
 from chat.models import ChatRoom, ChatParticipant
+from core.models import User
 
 
 
@@ -18,23 +19,20 @@ def test_message_list_cache_busts_on_create():
 
     list_url = reverse("chat:message-list", kwargs={"room_id": room.id})
 
-    # Baseline (whatever page policy is)
+    # Prime cache
     r1 = client.get(list_url, {"page_size": 100})
     assert r1.status_code == 200
     before_contents = [m["content"] for m in r1.data]
 
-    # Create a new message
-    create_payload = {"content": "cache-test-123"}
-    r_create = client.post(list_url, create_payload, format="json")
+    # Create new message
+    r_create = client.post(list_url, {"content": "cache-test-123"}, format="json")
     assert r_create.status_code in (200, 201)
 
-    # Fetch again → should reflect the new message (cache version bumped)
+    # Same params → should reflect bumped version
     r2 = client.get(list_url, {"page_size": 100})
     assert r2.status_code == 200
     after_contents = [m["content"] for m in r2.data]
-
-    # Must include the new message
     assert "cache-test-123" in after_contents
-
-    # And the response should differ from the baseline (cache actually invalidated)
-    assert after_contents != before_contents
+    # and previous messages are preserved
+    for c in before_contents:
+        assert c in after_contents
