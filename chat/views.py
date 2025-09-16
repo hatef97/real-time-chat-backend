@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.throttling import ScopedRateThrottle
 
 from core.models import User
 from .models import ChatRoom, Message, ChatParticipant
@@ -89,6 +90,7 @@ def _qp(request, name, default=""):
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsRoomParticipant]
+    throttle_classes = [ScopedRateThrottle]  # enable scoped throttling
 
     # ---- helpers ----
     def _room_from_request(self):
@@ -182,7 +184,15 @@ class MessageViewSet(viewsets.ModelViewSet):
         super().perform_destroy(instance)
         bump_room_version(room_id)
 
+    def get_throttles(self):
+        # tighter write limit for create; more generous for reads
+        if self.action == "create":
+            self.throttle_scope = "chat-create"
+        else:
+            self.throttle_scope = "chat-list"
+        return super().get_throttles()
 
+        
 
 class ChatParticipantViewSet(viewsets.ModelViewSet):
     """
