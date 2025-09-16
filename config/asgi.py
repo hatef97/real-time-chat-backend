@@ -1,29 +1,27 @@
 import os
-
-from django.core.asgi import get_asgi_application
-from django.conf import settings
-from django.contrib.staticfiles.handlers import ASGIStaticFilesHandler
-
 from channels.routing import ProtocolTypeRouter, URLRouter
 
+from django.core.asgi import get_asgi_application
+
+from chat.routing import websocket_urlpatterns
+from chat.auth import JwtAuthMiddlewareStack
+from chat.middleware import SimpleWsRateLimiter
 
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 django_asgi_app = get_asgi_application()
-if settings.DEBUG:
-    django_asgi_app = ASGIStaticFilesHandler(django_asgi_app)
 
-
-
-from core.channels_auth import JwtAuthMiddlewareStack
-from chat.routing import websocket_urlpatterns
-
-
+# Optional: make limits env-driven
+WS_MAX_EVENTS = int(os.environ.get("WS_MAX_EVENTS", "30"))     # events per window
+WS_PER_SECONDS = float(os.environ.get("WS_PER_SECONDS", "10")) # window size (s)
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    "websocket": JwtAuthMiddlewareStack(
-        URLRouter(websocket_urlpatterns)
+    "websocket": SimpleWsRateLimiter(
+        JwtAuthMiddlewareStack(
+            URLRouter(websocket_urlpatterns)
+        ),
+        max_events=WS_MAX_EVENTS,
+        per_seconds=WS_PER_SECONDS,
     ),
 })
