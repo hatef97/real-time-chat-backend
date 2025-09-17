@@ -25,3 +25,4 @@ application = ProtocolTypeRouter({
         per_seconds=WS_PER_SECONDS,
     ),
 })
+
