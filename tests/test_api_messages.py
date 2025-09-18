@@ -48,3 +48,4 @@ def test_list_and_create_messages_via_api():
 
     # DB sanity
     assert Message.objects.filter(chat_room=room, sender=u, content="hello from API").exists()
+
