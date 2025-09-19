@@ -123,3 +123,4 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def broadcast_typing(self, event):
         await self.send_json({"type": "typing", **{k: event[k] for k in ("room_id", "user_id", "is_typing")}})
+        
