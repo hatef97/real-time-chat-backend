@@ -40,3 +40,14 @@ class ChatParticipant(models.Model):
         
     def __str__(self):
         return f"{self.user.username} in {self.chat_room.name}"
+
+
+
+class Presence(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    channel_name = models.CharField(max_length=255, db_index=True)
+    room = models.ForeignKey("ChatRoom", null=True, blank=True, on_delete=models.CASCADE)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user","room","last_seen"])]
