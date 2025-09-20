@@ -16,6 +16,7 @@ db.sqlite3
 # Django static and media (generated)
 staticfiles/
 media/
+static/
 
 # IDEs
 .vscode/
