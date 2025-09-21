@@ -1,4 +1,5 @@
 import json
+import logging
 
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -9,6 +10,8 @@ from django.contrib.auth.models import AnonymousUser
 from .models import ChatRoom, ChatParticipant, Message, Presence
 
 
+
+logger = logging.getLogger(__name__)
 
 def room_group_name(room_id: int) -> str:
     return f"room_{room_id}"
@@ -46,10 +49,17 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         await self._presence_up()
 
     async def disconnect(self, code):
+        if code == 4408:
+            logger.warning(
+                "WebSocket 4408 (policy violation / throttled) user=%s",
+                getattr(self.scope.get("user"), "id", None),
+            )
+
         if getattr(self, "rooms", None):
             for gid in list(self.rooms):
                 await self.channel_layer.group_discard(gid, self.channel_name)
                 self.rooms.discard(gid)
+
         await self._presence_down()
 
     async def receive_json(self, content, **kwargs):
