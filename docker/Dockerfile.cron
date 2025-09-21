@@ -1,0 +1,33 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# Install cron + deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates tzdata cron \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install Python deps
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
+
+# Copy project
+COPY . /app
+
+# Defaults (overridable)
+ENV ARCHIVE_AFTER_DAYS=30
+ENV CRON_SCHEDULE="10 3 * * *"
+
+# Setup cron job
+RUN echo "${CRON_SCHEDULE} cd /app && python manage.py archive_messages --days ${ARCHIVE_AFTER_DAYS} >> /var/log/cron.log 2>&1" > /etc/cron.d/archive \
+ && chmod 0644 /etc/cron.d/archive \
+ && crontab /etc/cron.d/archive \
+ && touch /var/log/cron.log
+
+# Run cron in foreground
+CMD ["cron","-f"]

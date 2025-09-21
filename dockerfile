@@ -7,20 +7,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# System deps kept minimal (certs & tzdata are tiny and safe)
+# System deps (no cron here!)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates tzdata \
   && rm -rf /var/lib/apt/lists/*
 
-# Install deps first to leverage Docker layer cache
+# Install deps
 COPY requirements.txt /app/requirements.txt
-# Prefer binary wheels to avoid compiling from source
 RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
 
-# App code
+# Copy app
 COPY . /app
 
-# Optional: run entrypoint (handles migrate, etc.)
+# Entrypoint (migrations, gunicorn, etc.)
 RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000

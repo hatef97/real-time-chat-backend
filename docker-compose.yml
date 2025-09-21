@@ -13,7 +13,6 @@ services:
       - redis
     volumes:
       - .:/app
-    # Healthcheck is optional but helpful
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
       interval: 30s
@@ -38,6 +37,22 @@ services:
     ports:
       - "6379:6379"
     command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  archiver:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.cron
+    container_name: chat_archiver
+    env_file:
+      - .env
+    environment:
+      - ARCHIVE_AFTER_DAYS=30
+      - CRON_SCHEDULE=10 3 * * *   # daily at 03:10
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    restart: unless-stopped
 
 volumes:
   pgdata:
