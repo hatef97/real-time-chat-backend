@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views import ChatRoomViewSet, MessageViewSet, ChatParticipantViewSet
+from .views import ChatRoomViewSet, MessageViewSet, ChatParticipantViewSet, RoomOnlineView
 
 
 
@@ -26,4 +26,5 @@ urlpatterns = [
         MessageViewSet.as_view({"get": "list", "post": "create"}),
         name="message-list",
     ),
+    path("rooms/<int:room_id>/online/", RoomOnlineView.as_view(), name="room-online"),
 ]

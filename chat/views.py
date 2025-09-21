@@ -6,9 +6,10 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 
 from core.models import User
-from .models import ChatRoom, Message, ChatParticipant
+from .models import ChatRoom, Message, ChatParticipant, Presence
 from .serializers import ChatRoomSerializer, MessageSerializer, ChatParticipantSerializer
 from .permissions import IsRoomParticipant
 from .cache import (
@@ -282,3 +283,13 @@ class ChatParticipantViewSet(viewsets.ModelViewSet):
         cp.save(update_fields=["is_active"])
         room.participants.remove(request.user)
         return Response({"detail": "Left room."}, status=status.HTTP_200_OK)
+
+
+
+class RoomOnlineView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, room_id):
+        # unique users with a presence row in room
+        user_ids = Presence.objects.filter(room_id=room_id).values_list("user_id", flat=True).distinct()
+        return Response({"online_user_ids": list(user_ids)})
+        
