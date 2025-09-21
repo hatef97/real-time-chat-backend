@@ -51,3 +51,14 @@ class Presence(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["user","room","last_seen"])]
+
+
+
+class ArchivedMessage(models.Model):
+    orig_id = models.BigIntegerField(db_index=True, unique=True)
+    chat_room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    content = models.TextField()
+    timestamp = models.DateTimeField(db_index=True)
+    archived_at = models.DateTimeField(auto_now_add=True)
+    
