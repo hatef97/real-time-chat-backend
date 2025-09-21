@@ -17,13 +17,17 @@ urlpatterns = [
     
     # Core app
     path('api/core/', include('core.urls')),
-    
+
     # chat app
     path('api/chat/', include(("chat.urls", "chat"), namespace="chat")),
 
     # healthz
     path("healthz/", include("health_check.urls")),
+    
+    # django prometheus
+    path("", include("django_prometheus.urls")),
 ]
+
 
 if settings.DEBUG:
     urlpatterns += staticfiles_urlpatterns()

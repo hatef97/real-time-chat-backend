@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'health_check.db',       # check database
     'health_check.cache',    # check cache
     'health_check.storage',  # check storage
+    'django_prometheus',
     # My apps
     'core',
     'chat',
@@ -52,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
