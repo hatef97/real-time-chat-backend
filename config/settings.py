@@ -33,8 +33,11 @@ INSTALLED_APPS = [
     'djoser',
     'channels',               
     'rest_framework.authtoken',  
-    # 'corsheaders',          # enable when frontend arrives
-
+    # 'corsheaders',         # enable when frontend arrives
+    'health_check',          # required
+    'health_check.db',       # check database
+    'health_check.cache',    # check cache
+    'health_check.storage',  # check storage
     # My apps
     'core',
     'chat',

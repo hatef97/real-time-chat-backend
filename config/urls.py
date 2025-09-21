@@ -17,8 +17,12 @@ urlpatterns = [
     
     # Core app
     path('api/core/', include('core.urls')),
+    
     # chat app
     path('api/chat/', include(("chat.urls", "chat"), namespace="chat")),
+
+    # healthz
+    path("healthz/", include("health_check.urls")),
 ]
 
 if settings.DEBUG:
