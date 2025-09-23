@@ -26,3 +26,4 @@ class SimpleWsRateLimiter(BaseMiddleware):
                 dq.append(time.monotonic())
             return msg
         return await super().__call__(scope, limited_receive, send)
+        
