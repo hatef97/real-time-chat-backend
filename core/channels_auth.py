@@ -98,3 +98,4 @@ class JwtAuthMiddleware:
 def JwtAuthMiddlewareStack(inner):
     # Keep session/cookie auth compatibility
     return JwtAuthMiddleware(AuthMiddlewareStack(inner))
+
